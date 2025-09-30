@@ -8,7 +8,7 @@ int main() {
     int mode=0;
     int n_l = 1; //数据组数量
     int* n_m = NULL; //各组测量数据数量
-    int* n_b= NULL; //各组B类不确定度数量
+    int* n_b= NULL; //各组B类不确定度计入数
     double **x = NULL; //测量数据
     double *u_b = NULL; //B类不确定度
     double* alpha = NULL; //积式指数
@@ -31,11 +31,11 @@ int main() {
     
     char* head_x = NULL;
     char* head_b = NULL;
+    head_x = malloc((7+(int)n_l/10)*sizeof(char));
     for (int i=0;i<n_l;i++) {
         x[i] = malloc(n_m[i]*sizeof(double));//动态分配数据内存
         lineskip(fpi,5+i,LS_SET); //转至数据行
         //生成数据行头
-        head_x = malloc((7+(int)n_l/10)*sizeof(char));
         sprintf_s(head_x,7+(int)n_l/10,"x%d = [",i+1);
         //读取数据
         farrays(fpi,x[i],n_m[i],head_x,']',','); //读取测量数据
@@ -145,6 +145,18 @@ int main() {
 
     printf_s("\n本次计算已写入历史结果,可在result.txt文件中查询。\n");
     printf_s("%s\n",asctime(Now));
+
+    //释放内存
+    free(n_m);
+    free(n_b);
+    for (int i=0;i<n_l;i++) free(x[i]);
+    free(x);
+    free(u_b);
+    free(alpha);
+    free(head_x);
+    free(head_b);
+
+    printf("按任意键退出...");
     getchar();
 
     return 0;
