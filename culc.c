@@ -30,7 +30,6 @@ int main() {
     farrays_(fpi,n_b,n_l,"num_b = [",']',','); //读取各组B类不确定度计数
     
     char* head_x = NULL;
-    char* head_b = NULL;
     head_x = malloc((7+(int)n_l/10)*sizeof(char));
     for (int i=0;i<n_l;i++) {
         x[i] = malloc(n_m[i]*sizeof(double));//动态分配数据内存
@@ -66,8 +65,15 @@ int main() {
         printf("mode = link\n");
         fprintf_s(fpo,"\nmode = link\n");
         break;
+    case differ:
+        printf("mode = differ\n");
+        fprintf_s(fpo,"\nmode = differ\n");
+        break;
     default:
         printf("mode参数错误,请检查data.txt文件\n");
+        fclose(fpo);
+        printf("按任意键退出...");
+        getchar();
         return 1;
         break;
     }
@@ -93,46 +99,106 @@ int main() {
     }
     printf("\n");
 
-    //单变量统计量计算
-    if (mode == single) {
-        for(int i=0;i<n_l;i++){
-            printf("第%d组数据统计量计算:\n",i+1);
-            printf("均值x=∑xi/n:%.6g\n",mean(n_m[i],x[i]));
-            printf("方差D(x)=∑(xi-x)^2/n:%.6g\n",var(n_m[i],x[i]));
-            printf("标准差s(x)=√((xi-x)^2/(n-1)):%.6g\n",stddev(n_m[i],x[i]));
-            printf("合成不确定度u(xi):%.6g\n",unctty(n_m[i],x[i],n_b[i],u_b[i]));
-            printf("相对不确定度ur(xi):%.6g\n",unctty_r(n_m[i],x[i],n_b[i],u_b[i]));
-            printf("\n");
 
-            fprintf_s(fpo,"第%d组数据统计量计算:\n",i+1);
-            fprintf_s(fpo,"均值x=∑xi/n:%.6g\n",mean(n_m[i],x[i]));
-            fprintf_s(fpo,"方差D(x)=∑(xi-x)^2/n:%.6g\n",var(n_m[i],x[i]));
-            fprintf_s(fpo,"标准差s(x)=√((xi-x)^2/(n-1)):%.6g\n",stddev(n_m[i],x[i]));
-            fprintf_s(fpo,"合成不确定度u(xi):%.6g\n",unctty(n_m[i],x[i],n_b[i],u_b[i]));
-            fprintf_s(fpo,"相对不确定度ur(xi):%.6g\n",unctty_r(n_m[i],x[i],n_b[i],u_b[i]));
-            fprintf_s(fpo,"\n");
+
+    switch(mode){
+    //单变量统计量计算
+    case single:
+        {
+            for(int i=0;i<n_l;i++){
+                printf("第%d组数据统计量计算:\n",i+1);
+                printf("均值x=∑xi/n:%.6g\n",mean(n_m[i],x[i]));
+                printf("方差D(x)=∑(xi-x)^2/n:%.6g\n",var(n_m[i],x[i]));
+                printf("标准差s(x)=√((xi-x)^2/(n-1)):%.6g\n",stddev(n_m[i],x[i]));
+                printf("合成不确定度u(xi):%.6g\n",unctty(n_m[i],x[i],n_b[i],u_b[i]));
+                printf("相对不确定度ur(xi):%.6g\n",unctty_r(n_m[i],x[i],n_b[i],u_b[i]));
+                printf("\n");
+
+                fprintf_s(fpo,"第%d组数据统计量计算:\n",i+1);
+                fprintf_s(fpo,"均值x=∑xi/n:%.6g\n",mean(n_m[i],x[i]));
+                fprintf_s(fpo,"方差D(x)=∑(xi-x)^2/n:%.6g\n",var(n_m[i],x[i]));
+                fprintf_s(fpo,"标准差s(x)=√((xi-x)^2/(n-1)):%.6g\n",stddev(n_m[i],x[i]));
+                fprintf_s(fpo,"合成不确定度u(xi):%.6g\n",unctty(n_m[i],x[i],n_b[i],u_b[i]));
+                fprintf_s(fpo,"相对不确定度ur(xi):%.6g\n",unctty_r(n_m[i],x[i],n_b[i],u_b[i]));
+                fprintf_s(fpo,"\n");
+            }
+
+            break;
         }
-    }
 
     //积式g(c*π(xi^ai))相对不确定度计算
-    if (mode == multi){
-        printf("相对不确定度ur(g)=%.6g\n",u_mtrans(n_l,n_m,n_b,x,u_b,alpha));
+    case multi:
+        {
+            printf("相对不确定度ur(g)=%.6g\n",u_mtrans(n_l,n_m,n_b,x,u_b,alpha));
 
-        fprintf_s(fpo,"相对不确定度ur(g)=%.6g\n\n",u_mtrans(n_l,n_m,n_b,x,u_b,alpha));
+            fprintf_s(fpo,"相对不确定度ur(g)=%.6g\n\n",u_mtrans(n_l,n_m,n_b,x,u_b,alpha));
+
+            break;
+        }
+
+    //一元线性回归计算
+    case link:
+        {
+        printf("一元线性回归计算：\n");
+        printf("Y=%.6gX+%.6gf\n",k_link(n_m[0],x[0],x[1]),b_link(n_m[0],x[0],x[1]));
+        printf("相关系数:1-%.3g\n",1-r_link(n_m[0],x[0],x[1]));
+        printf("斜率k=%.6g,不确定度u(k)=%.6g\n",k_link(n_m[0],x[0],x[1]),u_k_link(n_m[0],x[0],x[1]));
+        printf("截距b=%.6g,不确定度u(b)=%.6g\n",b_link(n_m[0],x[0],x[1]),u_b_link(n_m[0],x[0],x[1]));
+
+        fprintf_s(fpo,"一元线性回归计算：\n");
+        fprintf_s(fpo,"Y=%.6gX+%.6g\n",k_link(n_m[0],x[0],x[1]),b_link(n_m[0],x[0],x[1]));
+        fprintf_s(fpo,"相关系数:1-%.3g\n",1-r_link(n_m[0],x[0],x[1]));
+        fprintf_s(fpo,"斜率k=%.6g,不确定度u(k)=%.6g\n",k_link(n_m[0],x[0],x[1]),u_k_link(n_m[0],x[0],x[1]));
+        fprintf_s(fpo,"截距b=%.6g,不确定度u(b)=%.6g\n\n",b_link(n_m[0],x[0],x[1]),u_b_link(n_m[0],x[0],x[1]));
+
+        break;
+        }
+    
+    //逐差法计算
+    case differ:
+    {
+        double **dx = NULL;
+        int *n_d = NULL;
+        n_d = malloc(n_l*sizeof(int));
+        for (int i=0;i<n_l;i++) n_d[i] = (n_m[i]-n_m[i]%2)/2;//计算逐差数据数量
+
+        dx = malloc(n_l*sizeof(double*));
+        for (int i=0;i<n_l;i++) dx[i] = malloc((n_d[i])*sizeof(double));//动态分配逐差数据内存
+        for (int i=0;i<n_l;i++) {
+            for (int j=0;j<n_d[i];j++) dx[i][j] = x[i][j+n_d[i]]-x[i][j];
+        }//计算逐差数据
+
+        printf("逐差数据计算完成, 结果如下:\n");
+        for (int i=0;i<n_l;i++){
+            printf("第%d组逐差数据：\n",i+1);
+            printf("逐差数据dx%d：",i+1);
+            for (int j=0;j<n_d[i];j++) printf("%.6g ",dx[i][j]);
+            printf("\n");
+            printf("均值dx=∑dxi/n:%.6g\n",mean(n_d[i],dx[i]));
+            printf("方差D(dx)=∑(dxi-dx)^2/n:%.6g\n",var(n_d[i],dx[i]));
+            printf("标准差s(dx)=√((dxi-dx)^2/(n-1)):%.6g\n",stddev(n_d[i],dx[i]));
+            printf("合成不确定度u(dxi):%.6g\n",unctty(n_d[i],dx[i],2*n_b[i],u_b[i]));
+            printf("相对不确定度ur(dxi):%.6g\n",unctty_r(n_d[i],dx[i],2*n_b[i],u_b[i]));
+            printf("\n");
+
+            fprintf_s(fpo,"第%d组逐差数据：\n",i+1);
+            fprintf_s(fpo,"逐差数据dx%d：",i+1);
+            for (int j=0;j<n_d[i];j++) fprintf_s(fpo,"%.6g ",dx[i][j]);
+            fprintf_s(fpo,"\n均值dx=∑dxi/n:%.6g\n",mean(n_d[i],dx[i]));
+            fprintf_s(fpo,"方差D(dx)=∑(dxi-dx)^2/n:%.6g\n",var(n_d[i],dx[i]));
+            fprintf_s(fpo,"标准差s(dx)=√((dxi-dx)^2/(n-1)):%.6g\n",stddev(n_d[i],dx[i]));
+            fprintf_s(fpo,"合成不确定度u(dxi):%.6g\n",unctty(n_d[i],dx[i],2*n_b[i],u_b[i]));
+            fprintf_s(fpo,"相对不确定度ur(dxi):%.6g\n",unctty_r(n_d[i],dx[i],2*n_b[i],u_b[i]));
+            fprintf_s(fpo,"\n");
+        }
+
+        //释放内存
+        for (int i=0;i<n_l;i++) free(dx[i]);
+        free(dx);
+        free(n_d);
+
+        break;
     }
-
-    if (mode == link){
-    printf("一元线性回归计算：\n");
-    printf("Y=%.6gX+%.6gf\n",k_link(n_m[0],x[0],x[1]),b_link(n_m[0],x[0],x[1]));
-    printf("相关系数:1-%.3g\n",1-r_link(n_m[0],x[0],x[1]));
-    printf("斜率k=%.6g,不确定度u(k)=%.6g\n",k_link(n_m[0],x[0],x[1]),u_k_link(n_m[0],x[0],x[1]));
-    printf("截距b=%.6g,不确定度u(b)=%.6g\n",b_link(n_m[0],x[0],x[1]),u_b_link(n_m[0],x[0],x[1]));
-
-    fprintf_s(fpo,"一元线性回归计算：\n");
-    fprintf_s(fpo,"Y=%.6gX+%.6g\n",k_link(n_m[0],x[0],x[1]),b_link(n_m[0],x[0],x[1]));
-    fprintf_s(fpo,"相关系数:1-%.3g\n",1-r_link(n_m[0],x[0],x[1]));
-    fprintf_s(fpo,"斜率k=%.6g,不确定度u(k)=%.6g\n",k_link(n_m[0],x[0],x[1]),u_k_link(n_m[0],x[0],x[1]));
-    fprintf_s(fpo,"截距b=%.6g,不确定度u(b)=%.6g\n\n",b_link(n_m[0],x[0],x[1]),u_b_link(n_m[0],x[0],x[1]));
     }
 
     //写入时间戳
@@ -154,116 +220,12 @@ int main() {
     free(u_b);
     free(alpha);
     free(head_x);
-    free(head_b);
+
+
 
     printf("按任意键退出...");
     getchar();
 
     return 0;
 }
-
-//均值
-double mean(int n,double*x){
-    double expc=0.0;
-    for (int i=0;i<n;i++) expc += x[i]/n;
-    return expc;
-}
-
-//方差
-double var(int n,double*x){
-    if (!n){
-        printf("样本数量为0,无法计算方差\n");
-        return NAN;
-    }
-    double expc=mean(n,x);
-    double var_=0.0;
-    for (int i=0;i<n;i++) var_ += (x[i]-expc)*(x[i]-expc)/n;
-    return var_;
-}
-
-//标准差
-double stddev(int n,double*x){
-    if (n<2) {
-        printf("样本数量过少，无法计算标准差\n");
-        return NAN;
-    }
-    else return sqrt(var(n,x)*n/(n-1));
-}
-
-//不确定度合成
-double unctty(int n,double*x,int n_b,double u_b){
-    double stddev_ = stddev(n,x);
-    double u_b2 = n_b*u_b*u_b;
-    if ((stddev_*stddev_ + u_b2)) return sqrt(stddev_*stddev_ + u_b2);
-    else {
-        printf("精度过低或数据有误\n");
-        return NAN;
-    }
-}
-
-//相对不确定度
-double unctty_r(int n,double*x,int n_b,double u_b){ 
-    if(mean(n,x)) return unctty(n,x,n_b,u_b)/mean(n,x);
-    else {
-        printf("均值为0,无法计算相对不确定度\n");
-        return NAN;
-    }
-}
-
-//独立变量积式不确定度传递
-//g=Const*x_1^alpha_1*x_2^alpha_2*...*x_n^alpha_n
-double u_mtrans(int n_l,int* n_m,int* n_b,double** x,double* u_b,double* alpha){
-    double* ur_x = NULL;
-    ur_x = malloc(n_l*sizeof(double));
-    for (int i=0;i<n_l;i++) ur_x[i] = unctty_r(n_m[i],x[i],n_b[i],u_b[i]);
-    double ur_g=0.0;
-    for (int i=0;i<n_l;i++) ur_g += (alpha[i]*ur_x[i])*(alpha[i]*ur_x[i]);
-    return sqrt(ur_g);
-}
-
-//回归计算
-//协方差
-double cov(int n,double* x,double* y){
-    double expx=mean(n,x);
-    double expy=mean(n,y);
-    double cov_=0.0;
-    for (int i=0;i<n;i++) cov_ += (x[i]-expx)*(y[i]-expy)/n;
-    return cov_;
-}
-
-//相关系数
-double r_link(int n,double* x,double* y){
-    return cov(n,x,y)/sqrt(var(n,x)*var(n,y));
-}
-
-//Y=aX+b
-//斜率a
-double k_link(int n,double* x,double* y){
-    return cov(n,x,y)/var(n,x);
-}
-//截距b
-double b_link(int n,double* x,double* y){
-    return mean(n,y)-k_link(n,x,y)*mean(n,x);
-}
-//残差平方和
-double rss_link(int n,double* x,double* y){
-    double a=k_link(n,x,y);
-    double b=b_link(n,x,y);
-    double rss=0.0;
-    for (int i=0;i<n;i++) rss += (y[i]-a*x[i]-b)*(y[i]-a*x[i]-b);
-    return rss;
-}
-//RSE
-double rse_link(int n,double* x,double* y){
-    return sqrt(rss_link(n,x,y)/(n-2));
-}
-//斜率不确定度
-double u_k_link(int n,double* x,double* y){
-    return rse_link(n,x,y)/sqrt(n*var(n,x));
-} 
-//截距不确定度
-double u_b_link(int n,double* x,double* y){
-    return u_k_link(n,x,y)*sqrt(mean(n,x)*mean(n,x)+var(n,x)*n);
-} 
-
 
